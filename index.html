@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Replacer – Text Replacement Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        .transition-all-200 {
+            transition: all 0.2s ease-in-out;
+        }
+
+        .custom-textarea {
+            resize: none;
+            min-height: 300px;
+        }
+
+        .input-pair {
+            transition: all 0.2s ease;
+        }
+
+        .input-pair:hover {
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl md:text-4xl font-bold text-indigo-700 mb-2">
+                <i class="fas fa-exchange-alt mr-2"></i><span data-i18n="title">Replacer</span>
+            </h1>
+            <p class="text-gray-600 max-w-2xl mx-auto" data-i18n="description">
+                Text Replacement Tool with Custom Rules
+            </p>
+        </header>
+
+        <!-- Main content -->
+        <div class="bg-white rounded-xl shadow-md overflow-hidden mb-8">
+            <!-- Rules section -->
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-800">
+                        <i class="fas fa-ruler-combined mr-2 text-indigo-600"></i>
+                        <span data-i18n="rules-title">Replacement Rules</span>
+                        <div class="inline-flex items-center space-x-6 bg-white rounded-full px-6 py-2 shadow-sm mb-4">
+                            <button id="toggle-language"
+                                class="text-sm font-medium text-gray-600 bg-gray-100 hover:bg-indigo-100 hover:text-indigo-600 px-4 py-2 rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                                English
+                            </button>
+                        </div>
+                    </h2>
+                    <button id="add-rule"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-all-200 flex items-center">
+                        <i class="fas fa-plus mr-2"></i><span data-i18n="add-rule">Add Rule</span>
+                    </button>
+                </div>
+
+                <div id="rules-container" class="space-y-3"></div>
+            </div>
+
+            <!-- Text areas -->
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label for="original-text" class="block text-sm font-medium text-gray-700">
+                                <i class="fas fa-file-alt mr-1"></i><span data-i18n="original-text">Original Text</span>
+                            </label>
+                            <button id="clear-original"
+                                class="text-xs text-gray-500 hover:text-gray-700 transition-all-200">
+                                <i class="fas fa-trash-alt mr-1"></i><span data-i18n="clear">Clear</span>
+                            </button>
+                        </div>
+                        <textarea id="original-text"
+                            class="w-full p-3 border border-gray-300 rounded-lg custom-textarea focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            placeholder="Paste your text here..."></textarea>
+                        <div class="flex items-center mt-2 text-xs text-gray-500">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            <span data-i18n="note">Changes automatically reflect on the result</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label for="result-text" class="block text-sm font-medium text-gray-700">
+                                <i class="fas fa-file-code mr-1"></i><span data-i18n="result-text">Result Text</span>
+                            </label>
+                            <button id="copy-result"
+                                class="text-xs text-gray-500 hover:text-gray-700 transition-all-200">
+                                <i class="fas fa-copy mr-1"></i><span data-i18n="copy">Copy</span>
+                            </button>
+                        </div>
+                        <textarea id="result-text" readonly
+                            class="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 custom-textarea"
+                            placeholder="Result will appear here..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center text-sm text-gray-500 mt-8">
+            <div class="inline-flex items-center space-x-6 bg-white rounded-full px-6 py-2 shadow-sm mb-4">
+                <span>
+                    <span class="font-semibold text-indigo-600" id="rules-count">0</span> <span
+                        data-i18n="active-rules">active rules</span>
+                </span>
+                <span>
+                    <span class="font-semibold text-indigo-600" id="replacements-count">0</span> <span
+                        data-i18n="replacements">replacements</span>
+                </span>
+            </div>
+            <p data-i18n="footer">Replacer - Text Replacement Tool with Custom Rules</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const rulesContainer = document.getElementById('rules-container');
+            const addRuleBtn = document.getElementById('add-rule');
+            const originalText = document.getElementById('original-text');
+            const resultText = document.getElementById('result-text');
+            const clearOriginalBtn = document.getElementById('clear-original');
+            const copyResultBtn = document.getElementById('copy-result');
+            const rulesCount = document.getElementById('rules-count');
+            const replacementsCount = document.getElementById('replacements-count');
+
+            let ruleIndex = 0;
+
+            loadRulesFromLocalStorage();
+
+            addRuleBtn.addEventListener('click', addRule);
+            clearOriginalBtn.addEventListener('click', () => {
+                originalText.value = '';
+                updateResult();
+            });
+
+            copyResultBtn.addEventListener('click', function () {
+                resultText.select();
+                document.execCommand('copy');
+                const old = copyResultBtn.innerHTML;
+                copyResultBtn.innerHTML = '<i class="fas fa-check mr-1"></i> Copiado!';
+                setTimeout(() => copyResultBtn.innerHTML = old, 2000);
+            });
+
+            originalText.addEventListener('input', updateResult);
+
+            function addRule(fromValue = '', toValue = '') {
+                const index = ruleIndex++;
+                const wrapper = document.createElement('div');
+                wrapper.className = 'flex gap-4 input-pair items-center';
+                wrapper.innerHTML = `
+                <input type="text" placeholder="Buscar por" data-type="from" data-index="${index}" class="from w-full p-2 border rounded-md border-gray-300 focus:ring focus:ring-indigo-200" value="${fromValue}">
+                <input type="text" placeholder="Substituir por" data-type="to" data-index="${index}" class="to w-full p-2 border rounded-md border-gray-300 focus:ring focus:ring-indigo-200" value="${toValue}">
+                <button class="text-red-500 hover:text-red-700" data-action="remove" data-index="${index}"><i class="fas fa-trash-alt"></i></button>`;
+
+                rulesContainer.appendChild(wrapper);
+
+                wrapper.querySelectorAll('input').forEach(input => {
+                    input.addEventListener('input', () => {
+                        updateResult();
+                        saveRulesToLocalStorage();
+                    });
+                });
+
+                wrapper.querySelector('[data-action="remove"]').addEventListener('click', () => {
+                    wrapper.remove();
+                    updateResult();
+                    saveRulesToLocalStorage();
+                });
+
+                updateRuleCount();
+            }
+
+            function updateResult() {
+                let text = originalText.value;
+                let totalReplacements = 0;
+
+                const rules = Array.from(rulesContainer.querySelectorAll('.input-pair')).map(pair => {
+                    const from = pair.querySelector('.from').value;
+                    const to = pair.querySelector('.to').value;
+                    return { from, to };
+                }).filter(rule => rule.from !== '');
+
+                rules.forEach(rule => {
+                    const regex = new RegExp(escapeRegExp(rule.from), 'g');
+                    const before = text;
+                    text = text.replace(regex, rule.to);
+                    if (before !== text) {
+                        const matches = before.match(regex);
+                        totalReplacements += matches ? matches.length : 0;
+                    }
+                });
+
+                resultText.value = text;
+                updateRuleCount(rules.length);
+                replacementsCount.textContent = totalReplacements;
+            }
+
+            function escapeRegExp(string) {
+                return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            }
+
+            function updateRuleCount(count = null) {
+                const ruleTotal = count !== null ? count : rulesContainer.querySelectorAll('.input-pair').length;
+                rulesCount.textContent = ruleTotal;
+            }
+
+            function saveRulesToLocalStorage() {
+                const rules = Array.from(rulesContainer.querySelectorAll('.input-pair')).map(pair => {
+                    const from = pair.querySelector('.from').value;
+                    const to = pair.querySelector('.to').value;
+                    return { from, to };
+                });
+                localStorage.setItem('pathReplaceRules', JSON.stringify(rules));
+            }
+
+            function loadRulesFromLocalStorage() {
+                const saved = localStorage.getItem('pathReplaceRules');
+                if (saved) {
+                    const rules = JSON.parse(saved);
+                    rules.forEach(rule => addRule(rule.from, rule.to));
+                } else {
+                    addRule();
+                }
+            }
+        });
+    </script>
+
+    <script>
+        const translations = {
+            pt: {
+                title: "Replacer",
+                description: "Ferramenta de Substituição de Textos por Regras Personalizadas",
+                "rules-title": "Regras de Substituição",
+                "add-rule": "Adicionar Regra",
+                "original-text": "Texto Original",
+                clear: "Limpar",
+                note: "Alterações refletem automaticamente ao lado",
+                "result-text": "Texto Resultante",
+                copy: "Copiar",
+                "active-rules": "regras ativas",
+                replacements: "substituições",
+                footer: "Replacer - Ferramenta de Substituição de Textos por Regras Personalizadas"
+            },
+            en: {
+                title: "Replacer",
+                description: "Text Replacement Tool with Custom Rules",
+                "rules-title": "Replacement Rules",
+                "add-rule": "Add Rule",
+                "original-text": "Original Text",
+                clear: "Clear",
+                note: "Changes automatically reflect on the result",
+                "result-text": "Result Text",
+                copy: "Copy",
+                "active-rules": "active rules",
+                replacements: "replacements",
+                footer: "Replacer - Text Replacement Tool with Custom Rules"
+            }
+        };
+
+        function setLanguage(lang) {
+            localStorage.setItem("replacerLang", lang);
+            document.querySelectorAll("[data-i18n]").forEach(el => {
+                const key = el.getAttribute("data-i18n");
+                if (translations[lang] && translations[lang][key]) {
+                    el.textContent = translations[lang][key];
+                }
+            });
+            document.getElementById("toggle-language").innerHTML = lang === "pt" ? "Português" : "English";
+        }
+
+        document.getElementById("toggle-language").addEventListener("click", () => {
+            const current = localStorage.getItem("replacerLang") || "en";
+            const next = current === "en" ? "pt" : "en";
+            setLanguage(next);
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            const lang = localStorage.getItem("replacerLang") || "en";
+            setLanguage(lang);
+        });
+    </script>
+</body>
+
+</html>
